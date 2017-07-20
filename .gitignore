@@ -1,0 +1,21 @@
+# general
+*~
+*.ini
+*.tmp
+*.[oa]
+.DS_Store
+._.DS_Store
+.project
+
+
+# haskell
+cabal.sandbox.config
+cabal.config
+*.hi
+*.chi
+*.chs.h
+*.summary
+.stack-work/
+dist/
+dist-newstyle/
+.cabal-sandbox/
