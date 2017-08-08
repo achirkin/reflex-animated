@@ -45,6 +45,7 @@ import           Control.Monad              (void)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans.Reader (ReaderT(..))
 import           Data.Coerce                (coerce)
+import           Data.Maybe                 (fromMaybe)
 import           Data.IORef                 (newIORef)
 import qualified GHCJS.DOM.Types     as DOM (IsElement, toElement)
 import           System.IO.Unsafe           (unsafeInterleaveIO)
@@ -80,9 +81,7 @@ registerHandler e mrenderCallback = do
     (resizeEvent, resizeCallback) <- newTriggerEvent
     (wheelEvent, wheelCallback) <- newTriggerEvent
     (onRenderEvent, onRenderCallback) <- newTriggerEvent
-    let renderCallback = case mrenderCallback of
-            Nothing -> const $ pure ()
-            Just rc -> rc
+    let renderCallback = fromMaybe (const $ pure ()) mrenderCallback
     renderFired <- liftIO $ newMVar ()
     performEvent_ $ (const . void . liftIO $ tryPutMVar renderFired ()) <$> onRenderEvent
     _state <- liftIO $ PK.newPointerKeeper (DOM.toElement e)
