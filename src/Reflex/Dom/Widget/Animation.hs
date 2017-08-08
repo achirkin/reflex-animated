@@ -24,7 +24,7 @@ module Reflex.Dom.Widget.Animation
     -- * Behaviors
   , altKeyB, ctrlKeyB, metaKeyB, shiftKeyB
   , buttonsB, downPointersB, curPointersB, downTimeB
-  , viewPortSizeD
+  , viewPortSizeD, viewPortSizeI
     -- * Data types
   , AnimationTime (..), getAnimationTime
     -- * Events
@@ -128,8 +128,8 @@ registerHandler e mrenderCallback = do
         modKeysB      = onDemand (PK.modKeys _state)
 
     -- Dynamic for the size of a view port
-    iVPSize <- liftIO $ PK.viewPortSize _state
-    viewPortSizeD <- Reflex.holdDyn iVPSize (coerce <$> resizeEvent)
+    viewPortSizeI <- liftIO $ PK.viewPortSize _state
+    viewPortSizeD <- Reflex.holdDyn viewPortSizeI (coerce <$> resizeEvent)
 
 
     return AnimationHandler {..}
@@ -164,6 +164,8 @@ data AnimationHandler t = AnimationHandler
     -- ^ All current modifier keys
   , viewPortSizeD :: Dynamic t (Double, Double)
     -- ^ State of the size of a target element
+  , viewPortSizeI :: (Double,Double)
+    -- ^ Initial size of a target element
   }
 
 play :: MonadIO m => AnimationHandler t -> m ()
