@@ -41,14 +41,16 @@ module Reflex.Dom.Widget.Animation
 
 
 import           Control.Concurrent.MVar    (tryPutMVar, tryTakeMVar, newMVar)
-import           Control.Monad              (void)
+import           Control.Concurrent         (forkIO)
+import           Control.Concurrent.Chan
+import           Control.Monad              (void, join, forever)
 import           Control.Monad.IO.Class     (MonadIO (..))
 import           Control.Monad.Trans.Reader (ReaderT(..))
 import           Data.Coerce                (coerce)
 import           Data.Maybe                 (fromMaybe)
 import           Data.IORef                 (newIORef)
 import qualified GHCJS.DOM.Types     as DOM (IsElement, toElement)
-import           System.IO.Unsafe           (unsafeInterleaveIO)
+import           System.IO.Unsafe           (unsafeInterleaveIO, unsafePerformIO)
 
 import           Reflex.Class               (EventSelector (..), Event, Dynamic
                                             ,Behavior (..), Reflex, MonadHold)
@@ -188,10 +190,12 @@ onDemand :: IO a -> Behavior t a
 onDemand ma = SpiderBehavior . Spider.Behavior . Spider.BehaviorM . ReaderT $ computeF
   where
     {-# NOINLINE computeF #-}
-    computeF (Nothing, _) = unsafeInterleaveIO ma
-    computeF (Just (invW,_), _) = unsafeInterleaveIO $ do
-        toReconnect <- newIORef []
-        _ <- Spider.invalidate toReconnect [invW]
+    computeF env = unsafeInterleaveIO $ do
+        writeChan invalidatorChan $ case env of
+            (Nothing, _) -> pure ()
+            (Just (invW,_), _) -> do
+               toReconnect <- newIORef []
+               void $ Spider.invalidate toReconnect [invW]
         -- from the function Reflex.Spider.Internal.invalidate it follows that
         -- the result invalidator list is empty,
         -- However, I am not sure what happens with toReconnect reference;
@@ -200,3 +204,10 @@ onDemand ma = SpiderBehavior . Spider.Behavior . Spider.BehaviorM . ReaderT $ co
         -- On the other hand, I am not sure if any switch can be subscribed to this kind of behavior.
         ma
 
+
+invalidatorChan :: Chan (IO ())
+invalidatorChan = unsafePerformIO $ do
+    c <- newChan
+    void . forkIO . forever . join $ readChan c
+    return c
+{-# NOINLINE invalidatorChan #-}
