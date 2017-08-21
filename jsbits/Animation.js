@@ -3,6 +3,49 @@
  */
 
 
+// declare dummy window if using nodejs.
+// I don't need it be functional, I just need to be able to run dependent ghcjs
+// projects in nodejs
+(function(){
+  if( typeof window === typeof undefined
+   && typeof global !== typeof undefined) {
+    var window = global;
+  }
+  if( typeof document === typeof undefined
+   && typeof global   !== typeof undefined) {
+    var document = global;
+  }
+})();
+
+
+// polyfill for performance.now
+// @license http://opensource.org/licenses/MIT
+// copyright Paul Irish 2015
+(function(){
+
+  if ("performance" in window == false) {
+      window.performance = {};
+  }
+
+  Date.now = (Date.now || function () {  // thanks IE8
+	  return new Date().getTime();
+  });
+
+  if ("now" in window.performance == false){
+
+    var nowOffset = Date.now();
+
+    if (performance.timing && performance.timing.navigationStart){
+      nowOffset = performance.timing.navigationStart
+    }
+
+    window.performance.now = function now(){
+      return Date.now() - nowOffset;
+    }
+  }
+
+})();
+
 // make sure that RequestAnimationFrame and CancelAnimationFrame work on all browsers
 (function() {
     'use strict';
