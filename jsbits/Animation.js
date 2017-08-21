@@ -2,28 +2,16 @@
  * Created by Artem Chirkin
  */
 
-
-// declare dummy window if using nodejs.
-// I don't need it be functional, I just need to be able to run dependent ghcjs
-// projects in nodejs
-(function(){
-  if( typeof window === typeof undefined
-   && typeof global !== typeof undefined) {
-    var window = global;
-  }
-  if( typeof document === typeof undefined
-   && typeof global   !== typeof undefined) {
-    var document = global;
-  }
-})();
-
-
 // polyfill for performance.now
 // @license http://opensource.org/licenses/MIT
 // copyright Paul Irish 2015
 (function(){
 
-  if ("performance" in window == false) {
+  if( typeof window === typeof undefined) {
+     return;
+  }
+
+  if (!window.hasOwnProperty("performance")) {
       window.performance = {};
   }
 
@@ -31,7 +19,7 @@
 	  return new Date().getTime();
   });
 
-  if ("now" in window.performance == false){
+  if (!window.performance.hasOwnProperty("now")){
 
     var nowOffset = Date.now();
 
@@ -39,7 +27,7 @@
       nowOffset = performance.timing.navigationStart
     }
 
-    window.performance.now = function now(){
+    window.performance.now = function(){
       return Date.now() - nowOffset;
     }
   }
@@ -49,6 +37,8 @@
 // make sure that RequestAnimationFrame and CancelAnimationFrame work on all browsers
 (function() {
     'use strict';
+    if( typeof window === typeof undefined) {return;}
+
     var lastTime = 0;
     var vendors = ['ms', 'moz', 'webkit', 'o'];
     for(var x = 0; x < vendors.length && !window['requestAnimationFrame']; ++x) {
@@ -76,6 +66,8 @@
 // the main thing
 var Animation = (function () {
     'use strict';
+
+    if( typeof window === typeof undefined) {return undefined;}
 
     // helper function to enable MouseEvent.buttons
     var toButtons = function(btn){
