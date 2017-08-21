@@ -5,34 +5,18 @@
 // polyfill for performance.now
 // @license http://opensource.org/licenses/MIT
 // copyright Paul Irish 2015
-(function(){
+(function() {
+    'use strict';
+    if( typeof window === typeof undefined) {return;}
 
-  if( typeof window === typeof undefined) {
-     return;
-  }
+    window.performance = (window.performance || {
+      offset: Date.now(),
+      now: function now(){
+          return Date.now() - this.offset;
+      }
+    });
 
-  if (!window.hasOwnProperty("performance")) {
-      window.performance = {};
-  }
-
-  Date.now = (Date.now || function () {  // thanks IE8
-	  return new Date().getTime();
-  });
-
-  if (!window.performance.hasOwnProperty("now")){
-
-    var nowOffset = Date.now();
-
-    if (performance.timing && performance.timing.navigationStart){
-      nowOffset = performance.timing.navigationStart
-    }
-
-    window.performance.now = function(){
-      return Date.now() - nowOffset;
-    }
-  }
-
-})();
+}());
 
 // make sure that RequestAnimationFrame and CancelAnimationFrame work on all browsers
 (function() {
@@ -66,7 +50,6 @@
 // the main thing
 var Animation = (function () {
     'use strict';
-
     if( typeof window === typeof undefined) {return undefined;}
 
     // helper function to enable MouseEvent.buttons
