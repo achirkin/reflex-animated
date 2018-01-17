@@ -187,10 +187,10 @@ var Animation = (function () {
         el.addEventListener('mouseleave', pCancel);
         el.addEventListener('touchcancel', pCancel);
 
-        document.addEventListener('webkitfullscreenchange', pk.updateLocation, false);
-        document.addEventListener('mozfullscreenchange', pk.updateLocation, false);
-        document.addEventListener('msfullscreenchange', pk.updateLocation, false);
-        document.addEventListener('fullscreenchange', pk.updateLocation, false);
+        document.addEventListener('webkitfullscreenchange', pk.updateLocationCallback, false);
+        document.addEventListener('mozfullscreenchange', pk.updateLocationCallback, false);
+        document.addEventListener('msfullscreenchange', pk.updateLocationCallback, false);
+        document.addEventListener('fullscreenchange', pk.updateLocationCallback, false);
         // make sure we prepared scaling
         this.updateLocationCallback();
         window.addEventListener('load',pk.updateLocationCallback ,false);
