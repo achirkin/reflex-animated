@@ -167,13 +167,9 @@ var Animation = (function () {
         this.sizeUpdated = false;
         this.scrolledInThisFrame = false;
         this.movedInThisFrame = false;
-        this.updateLocationCallback = function() { pk.updateLocation(); resize([pk.width, pk.height]); };
-        // var observer = new MutationObserver( function() { setTimeout(function(){ pk.updateLocationCallback.apply(pk, []); }, 500);  } );
-        // var config = {};
-        // config['attributes'] = true;
-        // observer.observe(el, config);
+        this.updateLocationCallback = function() { pk.updateLocation.apply(pk, []); resize([pk.width, pk.height]); };
         window.addEventListener('scroll',function() { pk.updateLocation.apply(pk, []); });
-        //window.addEventListener('resize', function() { pk.updateLocationCallback.apply(pk, [false]); }  );
+        //window.addEventListener('resize', function() { pk.f.apply(pk, [false]); }  );
 
         el.addEventListener('contextmenu',function(ev){var e = window.event||ev; e.preventDefault();e.stopPropagation();return false;});
         el['style']['touch-action'] = "none";
