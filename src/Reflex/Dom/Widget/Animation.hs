@@ -18,7 +18,7 @@
 
 module Reflex.Dom.Widget.Animation
   ( -- * JS handler
-    AnimationHandler (), registerHandler, play, pause
+    AnimationHandler (), registerHandler, play, pause, step
     -- * Events
   , animationEvents, pointerEvents, wheelEvents, resizeEvents, onRenderEvent
     -- * Behaviors
@@ -168,6 +168,9 @@ data AnimationHandler t = AnimationHandler
   , viewPortSizeI :: (Double,Double)
     -- ^ Initial size of a target element
   }
+
+step :: MonadIO m => AnimationHandler t -> m ()
+step = liftIO . PK.step . _state
 
 play :: MonadIO m => AnimationHandler t -> m ()
 play = liftIO . PK.play . _state

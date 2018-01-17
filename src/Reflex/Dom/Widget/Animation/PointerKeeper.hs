@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, KindSignatures, DataKinds #-}
+{-# LANGUAGE Rank2Types, DataKinds #-}
 {-# LANGUAGE JavaScriptFFI #-}
 -----------------------------------------------------------------------------
 -- |
@@ -17,7 +17,7 @@ module Reflex.Dom.Widget.Animation.PointerKeeper
   , altKey, ctrlKey, metaKey, shiftKey, modKeys, buttons
   , eventPointerKeeper
   , downTime, downPointers, curPointers
-  , play, pause
+  , play, pause, step
   , viewPortSize
   ) where
 
@@ -76,6 +76,7 @@ foreign import javascript unsafe "$r = new Animation.PointerKeeper($1,$2,$3,$4,$
 
 
 foreign import javascript unsafe "$1.play()" play :: PointerKeeper -> IO ()
+foreign import javascript unsafe "$1.playStep()" step :: PointerKeeper -> IO ()
 foreign import javascript unsafe "$1.stop()" pause :: PointerKeeper -> IO ()
 foreign import javascript unsafe "$1.altKey"   altKey   :: PointerKeeper -> IO Bool
 foreign import javascript unsafe "$1.ctrlKey"  ctrlKey  :: PointerKeeper -> IO Bool

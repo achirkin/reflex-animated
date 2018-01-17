@@ -139,9 +139,9 @@ var Animation = (function () {
         pk.shiftKey = ev.shiftKey ? ev.shiftKey : false;
         if (isTouchEv) {
             this.pointers = ev['touches'].length == 0 ? pk.curPointers :
-                 Array.prototype.slice.call(ev['touches']).map(function(t) {return [(t.clientX - pk.clientX) * pk.clientScaleX, (t.clientY - pk.clientY) * pk.clientScaleY];});
+                 Array.prototype.slice.call(ev['touches']).map(function(t) {return [t.clientX - pk.clientX, t.clientY - pk.clientY];});
         } else {
-            this.pointers = ev.clientX ? [[(ev.clientX - pk.clientX) * pk.clientScaleX, (ev.clientY - pk.clientY) * pk.clientScaleY]] : pk.curPointers;
+            this.pointers = ev.clientX ? [[ev.clientX - pk.clientX, ev.clientY - pk.clientY]] : pk.curPointers;
         }
 
         // update keeper's pointer position tracking
@@ -157,8 +157,8 @@ var Animation = (function () {
     var PointerKeeper = function PointerKeeper(el, update, pointerUp, pointerClick, pointerDown, pointerMove, pointerCancel, resize) {
         var pk = this;
         this.target = el;
+        this.busy = false;
         this.running = false;
-        this.toResize = false;
         this.update = update;
         el.pointerKeeper = this;
         this.downPointers = [];
@@ -167,12 +167,12 @@ var Animation = (function () {
         this.sizeUpdated = false;
         this.scrolledInThisFrame = false;
         this.movedInThisFrame = false;
-        this.updateLocationCallback = function(updateScaling) { pk.updateLocation.apply(pk, [updateScaling]); resize([pk.width, pk.height]); };
-        var observer = new MutationObserver( function() { setTimeout(function(){ pk.updateLocationCallback.apply(pk, [true]); }, 500);  } );
-        var config = {};
-        config['attributes'] = true;
-        observer.observe(el, config);
-        window.addEventListener('scroll',function() { pk.updateLocation.apply(pk, [false]); });
+        this.updateLocationCallback = function() { pk.updateLocation(); resize([pk.width, pk.height]); };
+        // var observer = new MutationObserver( function() { setTimeout(function(){ pk.updateLocationCallback.apply(pk, []); }, 500);  } );
+        // var config = {};
+        // config['attributes'] = true;
+        // observer.observe(el, config);
+        window.addEventListener('scroll',function() { pk.updateLocation.apply(pk, []); });
         //window.addEventListener('resize', function() { pk.updateLocationCallback.apply(pk, [false]); }  );
 
         el.addEventListener('contextmenu',function(ev){var e = window.event||ev; e.preventDefault();e.stopPropagation();return false;});
@@ -191,77 +191,78 @@ var Animation = (function () {
         el.addEventListener('mouseleave', pCancel);
         el.addEventListener('touchcancel', pCancel);
 
-        document.addEventListener('webkitfullscreenchange', function(e) {pk.toResize = true;}, false);
-        document.addEventListener('mozfullscreenchange', function(e) {pk.toResize = true;}, false);
-        document.addEventListener('msfullscreenchange', function(e) {pk.toResize = true;}, false);
-        document.addEventListener('fullscreenchange', function(e) {pk.toResize = true;}, false);
+        document.addEventListener('webkitfullscreenchange', pk.updateLocation, false);
+        document.addEventListener('mozfullscreenchange', pk.updateLocation, false);
+        document.addEventListener('msfullscreenchange', pk.updateLocation, false);
+        document.addEventListener('fullscreenchange', pk.updateLocation, false);
         // make sure we prepared scaling
-        this.updateLocationCallback(true);
-        window.addEventListener('load',function(e) {pk.updateLocationCallback(true);} ,false);
+        this.updateLocationCallback();
+        window.addEventListener('load',pk.updateLocationCallback ,false);
     };
 
     // Update position of an element so that it serves as a veiwport for pointer position;
     // computes available space within margin, border, and padding (so that it works with an html canvas size).
-    PointerKeeper.prototype.updateLocation = function (updateScaling) {
+    PointerKeeper.prototype.updateLocation = function () {
         var elstyle = window.getComputedStyle(this.target, null),
             pleft = parseFloat(elstyle.getPropertyValue('padding-left')) + parseFloat(elstyle.getPropertyValue('border-left-width')),
             ptop = parseFloat(elstyle.getPropertyValue('padding-top')) + parseFloat(elstyle.getPropertyValue('border-top-width')),
             pbottom = parseFloat(elstyle.getPropertyValue('padding-bottom')) + parseFloat(elstyle.getPropertyValue('border-bottom-width')),
             pright = parseFloat(elstyle.getPropertyValue('padding-right')) + parseFloat(elstyle.getPropertyValue('border-right-width')),
-            bbox = this.target.getBoundingClientRect(),
-            iheight = bbox.height - ptop - pbottom,
-            iwidth = bbox.width - pleft - pright;
+            bbox = this.target.getBoundingClientRect();
         this.clientX = bbox.left + pleft;
         this.clientY = bbox.top + ptop;
-        if (updateScaling) {
-            this.clientScaleX = this.target.hasAttribute('width')  ? this.target.getAttribute('width')  / iwidth : 1;
-            this.clientScaleY = this.target.hasAttribute('height') ? this.target.getAttribute('height') / iheight : 1;
-        }
-        this.width  = this.clientScaleX * iwidth;
-        this.height = this.clientScaleY * iheight;
+        this.width = bbox.width - pleft - pright;
+        this.height = bbox.height - ptop - pbottom;
         this.bboxw = bbox.width;
         this.bboxh = bbox.height;
-        if (!this.sizeUpdated && (this.target.width != this.width || this.target.height != this.height)) {
-            this.target.width = this.width;
-            this.target.height = this.height;
-            this.sizeUpdated = true;
-        } else {
-            this.sizeUpdated = false;
-        }
+        this.target.width = this.width;
+        this.target.height = this.height;
     };
 
     // run animation loop
     PointerKeeper.prototype.play = function () {
         this.running = true;
+        this.busy = true;
         var pk = this;
         var bbox = pk.target.getBoundingClientRect();
-        var toUpdateDelay = 10, toUpdateCounter = toUpdateDelay;
         function step(timestamp) {
             if (pk.running) {
+                pk.busy = true;
                 pk.update(timestamp);
                 pk.movedInThisFrame = false;
                 pk.scrolledInThisFrame = false;
 
                 bbox = pk.target.getBoundingClientRect();
-                if ((pk.bboxw != bbox.width || pk.bboxh != bbox.height) && !(pk.toResize)) {
-                    pk.toResize = true;
-                    pk.updateLocationCallback(false);
-                    //console.log('updating!', pk.bboxw, bbox.width, pk.bboxh, bbox.height);
-                }
-                if (pk.toResize) {
-                  if (toUpdateCounter > 0) {
-                    toUpdateCounter--;
-                  } else {
-                    pk.updateLocationCallback(false);
-                    //console.log('updating 2!', pk.bboxw, bbox.width, pk.bboxh, bbox.height);
-                    toUpdateCounter = toUpdateDelay;
-                    pk.toResize = false;
-                  }
+                if (pk.bboxw != bbox.width || pk.bboxh != bbox.height) {
+                    pk.updateLocationCallback();
+                    // console.log('updating!', pk.bboxw, bbox.width, pk.bboxh, bbox.height);
                 }
                 window.requestAnimationFrame(step);
+            } else {
+                pk.busy = false;
             }
         }
         window.requestAnimationFrame(step);
+    };
+
+    PointerKeeper.prototype.playStep = function () {
+        var pk = this;
+        if(!pk.busy) {
+            pk.busy = true;
+            var bbox = pk.target.getBoundingClientRect();
+            function step(timestamp) {
+                pk.update(timestamp);
+                pk.movedInThisFrame = false;
+                pk.scrolledInThisFrame = false;
+                bbox = pk.target.getBoundingClientRect();
+                if (pk.bboxw != bbox.width || pk.bboxh != bbox.height) {
+                    pk.updateLocationCallback();
+                    // console.log('updating!', pk.bboxw, bbox.width, pk.bboxh, bbox.height);
+                }
+                pk.busy = false;
+            }
+            window.requestAnimationFrame(step);
+        }
     };
 
     // stop animation loop

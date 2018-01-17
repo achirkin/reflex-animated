@@ -13,7 +13,7 @@ import JavaScript.Web.Canvas
 
 
 main :: IO ()
-main = do
+main =
     mainWidget $ el "div" $ do
       canvas <- fst <$> elAttr' "canvas"
                         ( Map.fromList [("width", "600")
